@@ -1,8 +1,8 @@
 const { createCanvas } = require('canvas');
-const latex = require('canvas-latex'); // Adjust the path according to your project structure
+const latex = require('./canvas-latex'); // Adjust the path according to your project structure
 
 const canvas = createCanvas(800, 600);
-const ctx = canvas.getContext('2d');
+const ctx = canvas.getContext('2d');``
 
 latex(ctx, {
   text: '\\frac{a}{b}',
