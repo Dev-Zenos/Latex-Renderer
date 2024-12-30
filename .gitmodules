@@ -1,0 +1,3 @@
+[submodule "canvas-latex"]
+	path = canvas-latex
+	url = https://github.com/CurriculumAssociates/canvas-latex
