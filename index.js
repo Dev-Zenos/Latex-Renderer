@@ -1,61 +1,67 @@
-const katex = require('katex');
-const { createCanvas } = require('canvas');
+const puppeteer = require('puppeteer');
 const fs = require('fs');
+const katex = require('katex');
 
 // Function to render LaTeX and save as image
-function latexToImage(latexString, outputPath) {
-    // Create a canvas and get the context
-    const width = 800;  // Set the canvas width
-    const height = 200; // Set the canvas height
-    const canvas = createCanvas(width, height);
-    const ctx = canvas.getContext('2d');
+async function latexToImage(latexString, outputPath) {
+    // Launch a headless browser
+    const browser = await puppeteer.launch();
+    const page = await browser.newPage();
 
-    // Set canvas background to white
-    ctx.fillStyle = 'white';
-    ctx.fillRect(0, 0, width, height);
+    // Set the HTML content with the rendered LaTeX
+    const htmlContent = `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.11/katex.min.css">
+            <style>
+                body {
+                    margin: 0;
+                    padding: 0;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    height: 100vh;
+                }
+                .latex-container {
+                    display: inline-block;
+                    padding: 10px;
+                    background-color: white;
+                    border: 1px solid black;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="latex-container" id="latex-container"></div>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.11/katex.min.js"></script>
+            <script>
+                // Render the LaTeX string
+                const latexString = ${JSON.stringify(latexString)};
+                const container = document.getElementById('latex-container');
+                katex.render(latexString, container, {
+                    throwOnError: false
+                });
+            </script>
+        </body>
+        </html>
+    `;
 
-    // Render LaTeX to HTML
-    const html = katex.renderToString(latexString, {
-        throwOnError: false,
-        output: 'html'
-    });
+    await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
 
-    // Create a temporary DOM to parse the HTML
-    const { JSDOM } = require('jsdom');
-    const dom = new JSDOM(`<!DOCTYPE html><body>${html}</body>`);
-    const svgElement = dom.window.document.querySelector('svg');
+    // Capture the screenshot of the rendered LaTeX
+    const latexContainer = await page.$('.latex-container');
+    await latexContainer.screenshot({ path: outputPath });
 
-    if (svgElement) {
-        // Serialize the SVG element to a string
-        const svg = svgElement.outerHTML;
-
-        // Use canvas to draw the SVG
-        const { DOMParser, XMLSerializer } = dom.window;
-        const parser = new DOMParser();
-        const serializer = new XMLSerializer();
-        const svgDoc = parser.parseFromString(svg, 'image/svg+xml');
-        const svgSerialized = serializer.serializeToString(svgDoc.documentElement);
-
-        const Image = require('canvas').Image;
-        const img = new Image();
-        img.onload = () => {
-            ctx.drawImage(img, 0, 0);
-
-            // Save the canvas as an image
-            const buffer = canvas.toBuffer('image/png');
-            fs.writeFileSync(outputPath, buffer);
-            console.log(`Image saved as ${outputPath}`);
-        };
-        img.onerror = (err) => {
-            console.error('Error loading SVG image:', err);
-        };
-        img.src = `data:image/svg+xml;base64,${Buffer.from(svgSerialized).toString('base64')}`;
-    } else {
-        console.error('Error: No SVG element found in the rendered LaTeX.');
-    }
+    // Close the browser
+    await browser.close();
 }
 
 // Example usage
-const latexString = '\\frac{a}{b} = c';
+const latexString = '\\int_{0}^{\\pi} \\left(\\frac{\\sin(x)}{\\sqrt{1-e^2\\cos^2(x)}}\\right)^3 \\cdot \\frac{dx}{\\sqrt{4+\\tan^2(x)}} + \\sum_{n=1}^{\\infty} \\frac{(-1)^{n+1}}{n^2} \\cdot \\prod_{k=1}^{n} \\frac{2k-1}{2k}';
 const outputPath = 'image.png';
-latexToImage(latexString, outputPath);
+latexToImage(latexString, outputPath).then(() => {
+    console.log(`Image saved as ${outputPath}`);
+}).catch((error) => {
+    console.error('Error rendering LaTeX to image:', error);
+});
