@@ -2,13 +2,11 @@ const puppeteer = require('puppeteer');
 const fs = require('fs');
 const katex = require('katex');
 
-// Function to render LaTeX and save as image
+
 async function latexToImage(latexString, outputPath) {
-    // Launch a headless browser
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
 
-    // Set the HTML content with the rendered LaTeX
     const htmlContent = `
         <!DOCTYPE html>
         <html lang="en">
@@ -49,11 +47,9 @@ async function latexToImage(latexString, outputPath) {
 
     await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
 
-    // Capture the screenshot of the rendered LaTeX
     const latexContainer = await page.$('.latex-container');
     await latexContainer.screenshot({ path: outputPath });
 
-    // Close the browser
     await browser.close();
 }
 
