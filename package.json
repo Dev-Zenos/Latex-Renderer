@@ -9,7 +9,8 @@
   "author": "zenos.__.",
   "license": "ISC",
   "dependencies": {
-    "@curriculumassociates/canvas-latex": "github:CurriculumAssociates/canvas-latex",
-    "canvas": "^3.0.0"
+    "canvas": "^3.0.0",
+    "fs": "^0.0.1-security",
+    "katex": "^0.16.19"
   }
 }
